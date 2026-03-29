@@ -1,0 +1,13 @@
+白队/
+黑队/
+*.mov
+*.mp4
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.webm
+.venv/
+__pycache__/
+*.pyc
+.git/
