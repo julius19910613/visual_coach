@@ -51,6 +51,87 @@ uv run main.py path/to/player_video.mp4 --pretty
 
 视频偏进攻时，防守维度若无足够画面会标记为 `observability: "none"`、`score: null`。
 
+## Web API
+
+项目提供 FastAPI Web API，支持通过 HTTP 上传视频文件进行分析。
+
+### 启动 API 服务器
+
+```bash
+# 使用 uv 启动（推荐）
+uv run run_api.py
+
+# 或指定自定义端口和主机
+uv run run_api.py --host 0.0.0.0 --port 8080
+
+# 开发模式（自动重载）
+uv run run_api.py --reload
+```
+
+服务器启动后：
+- API 文档：http://localhost:8000/docs （Swagger UI）
+- 根端点：http://localhost:8000/
+- 健康检查：http://localhost:8000/health
+
+### API 端点
+
+#### POST /api/analyze
+
+上传并分析球员视频文件。
+
+**请求格式**：`multipart/form-data`
+
+**参数**：
+- `file`：视频文件（必填）
+
+**支持的视频格式**：.mp4, .mpeg, .mpg, .mov, .avi, .flv, .webm, .wmv, .3gpp
+
+**文件大小限制**：最大 2 GB
+
+**响应**：
+- `200`：成功，返回 `PlayerAnalysisReport` JSON
+- `400`：无效文件格式
+- `413`：文件过大
+- `500`：分析错误
+
+**示例**：
+
+```bash
+# 使用 curl 测试
+curl -X POST "http://localhost:8000/api/analyze" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@path/to/player_video.mp4"
+```
+
+**Python 示例**：
+
+```python
+import requests
+
+url = "http://localhost:8000/api/analyze"
+files = {"file": open("player_video.mp4", "rb")}
+response = requests.post(url, files=files)
+
+if response.status_code == 200:
+    report = response.json()
+    print(f"Player summary: {report['player_summary']}")
+    print(f"Offense score: {report['dimensions']['offense']['score']}")
+    print(f"Defense score: {report['dimensions']['defense']['score']}")
+else:
+    print(f"Error: {response.json()}")
+```
+
+### 测试 API
+
+```bash
+# 运行基本测试（健康检查、根端点）
+uv run test_api.py
+
+# 测试视频上传
+uv run test_api.py path/to/test_video.mp4
+```
+
 ## MCP（Cursor）
 
 项目已配置 [Google Developer Knowledge MCP](https://developers.google.com/knowledge/mcp)（官方远程服务），用于在 Cursor 中检索 Google 开发者文档（含 Google Cloud、Firebase、Android、Maps 等；与 Gemini / 视频 API 相关的官方说明也可通过文档检索辅助）。
