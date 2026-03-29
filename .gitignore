@@ -1,24 +1,13 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
+*.pyo
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual Environment
 .venv/
@@ -51,6 +40,7 @@ env/
 *.swp
 *.swo
 *~
+.cursor/
 
 # OS
 .DS_Store
@@ -62,7 +52,21 @@ logs/
 
 # Cache
 .cache/
-.cache
 
-# Cursor
-.cursor/
+# Distribution / Packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
