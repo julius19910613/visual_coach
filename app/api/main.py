@@ -3,6 +3,7 @@
 import logging
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -16,9 +17,10 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from app.api.url_downloader import URLDownloadError, download_from_url
-from config.settings import FILE_API_MAX_BYTES, get_video_mime_type
+from config.settings import FILE_API_MAX_BYTES, R2_ENABLED, get_video_mime_type
 from src.analyzer import analyze_player_video
 from src.gemini_client import GeminiAnalyzerError
+from src.r2_storage import R2StorageError, upload_video
 from src.schemas import PlayerAnalysisReport
 from src.video_loader import VideoLoadError
 
@@ -108,6 +110,7 @@ async def health():
 async def analyze_video(
     file: Optional[UploadFile] = File(None),
     video_url: Optional[str] = Form(None),
+    store_video: bool = Form(True),
 ) -> PlayerAnalysisReport:
     """
     Analyze a player video via file upload or cloud URL.
@@ -208,11 +211,30 @@ async def analyze_video(
 
         # Analyze the video
         assert tmp_path is not None
+
+        # Optionally upload to R2 for persistence
+        r2_video_url: Optional[str] = None
+        if R2_ENABLED and store_video:
+            try:
+                filename = Path(video_url).name if video_url else (file.filename or "video")
+                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                object_key = f"videos/{timestamp}_{filename}"
+                r2_video_url = upload_video(tmp_path, object_key)
+                logger.info(f"Video stored in R2: {r2_video_url}")
+            except R2StorageError as e:
+                logger.warning(f"R2 upload failed, continuing with analysis: {e}")
+
         try:
             source_name = video_url or file.filename  # type: ignore[union-attr]
             logger.info(f"Starting analysis of video: {source_name}")
             report = analyze_player_video(tmp_path)
             logger.info(f"Analysis completed successfully for: {source_name}")
+
+            # Attach R2 URL to response if available
+            if r2_video_url:
+                return JSONResponse(
+                    content={**report.model_dump(), "video_url": r2_video_url}
+                )
             return report
 
         except VideoLoadError as e:

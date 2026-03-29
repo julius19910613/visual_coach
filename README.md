@@ -82,7 +82,9 @@ uv run run_api.py --reload
 **请求格式**：`multipart/form-data`
 
 **参数**：
-- `file`：视频文件（必填）
+- `file`：视频文件（与 `video_url` 二选一）
+- `video_url`：视频 URL（Google Drive、Dropbox 或直链，与 `file` 二选一）
+- `store_video`：是否将视频存储到 Cloudflare R2（默认 `true`；R2 未配置时忽略）
 
 **支持的视频格式**：.mp4, .mpeg, .mpg, .mov, .avi, .flv, .webm, .wmv, .3gpp
 
@@ -147,3 +149,21 @@ uv run test_api.py path/to/test_video.mp4
    或将 `export` 写入 `~/.zshrc` 后重启 Cursor。
 
 配置位于 [.cursor/mcp.json](.cursor/mcp.json)。验证：在 Agent 中提问与 Google 文档相关的问题，应出现 `search_documents` / `get_documents` 工具调用。
+
+## Cloudflare R2 存储（可选）
+
+配置 R2 后，上传的视频会持久化存储，分析响应中会包含 `video_url` 字段。未配置时行为不变（仅使用临时文件）。
+
+1. 在 [Cloudflare Dashboard](https://dash.cloudflare.com/) 创建 R2 存储桶。
+2. 在 **R2 > 管理 R2 API 令牌** 中创建 API 令牌（权限：对象读写）。
+3. 在 `.env` 中添加：
+
+```
+R2_ACCOUNT_ID=你的账户ID
+R2_ACCESS_KEY_ID=你的Access Key ID
+R2_SECRET_ACCESS_KEY=你的Secret Access Key
+R2_BUCKET_NAME=visual-coach-videos
+R2_PUBLIC_URL=                # 可选：自定义域名，如 https://videos.yourdomain.com
+```
+
+`R2_PUBLIC_URL` 为空时，API 返回的 `video_url` 为预签名 URL（默认 1 小时有效）；设置自定义域名后返回永久公开链接（需在 R2 存储桶设置中启用公开访问）。

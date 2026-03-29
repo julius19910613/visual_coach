@@ -12,6 +12,14 @@ load_dotenv(override=True)
 GEMINI_API_KEY: str = (os.getenv("GEMINI_API_KEY") or "").strip()
 GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
+# Cloudflare R2 Storage (optional — video persistence)
+R2_ACCOUNT_ID: str = os.getenv("R2_ACCOUNT_ID", "")
+R2_ACCESS_KEY_ID: str = os.getenv("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY: str = os.getenv("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET_NAME: str = os.getenv("R2_BUCKET_NAME", "visual-coach-videos")
+R2_PUBLIC_URL: str = os.getenv("R2_PUBLIC_URL", "")
+R2_ENABLED: bool = bool(R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY)
+
 # Video size thresholds (bytes)
 INLINE_VIDEO_MAX_BYTES: int = 100 * 1024 * 1024  # 100 MB
 FILE_API_MAX_BYTES: int = 2 * 1024 * 1024 * 1024  # 2 GB (free tier)
