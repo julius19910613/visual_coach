@@ -11,6 +11,8 @@ load_dotenv(override=True)
 # Gemini API (strip avoids trailing newline/space from editors)
 GEMINI_API_KEY: str = (os.getenv("GEMINI_API_KEY") or "").strip()
 GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_URL_MODEL: str = os.getenv("GEMINI_URL_MODEL", "gemini-3-flash-preview")
+GEMINI_URL_MAX_BYTES: int = int(os.getenv("GEMINI_URL_MAX_BYTES", str(100 * 1024 * 1024)))
 
 # Cloudflare R2 Storage (optional — video persistence)
 R2_ACCOUNT_ID: str = os.getenv("R2_ACCOUNT_ID", "")
@@ -19,6 +21,12 @@ R2_SECRET_ACCESS_KEY: str = os.getenv("R2_SECRET_ACCESS_KEY", "")
 R2_BUCKET_NAME: str = os.getenv("R2_BUCKET_NAME", "visual-coach-videos")
 R2_PUBLIC_URL: str = os.getenv("R2_PUBLIC_URL", "")
 R2_ENABLED: bool = bool(R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY)
+
+# Async analysis (Vercel API + worker)
+ASYNC_MODE: bool = os.getenv("ASYNC_MODE", "true").lower() == "true"
+JOB_STORE_PATH: str = os.getenv("JOB_STORE_PATH", "data/jobs.db")
+WORKER_ENDPOINT: str = os.getenv("WORKER_ENDPOINT", "")
+WORKER_SHARED_SECRET: str = os.getenv("WORKER_SHARED_SECRET", "")
 
 # Video size thresholds (bytes)
 INLINE_VIDEO_MAX_BYTES: int = 100 * 1024 * 1024  # 100 MB

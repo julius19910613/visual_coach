@@ -1,7 +1,9 @@
 """Cloudflare R2 storage module for video persistence."""
 
 import logging
+import tempfile
 from pathlib import Path
+from typing import Any
 
 import boto3
 from botocore.config import Config as BotoConfig
@@ -121,6 +123,31 @@ def delete_video(object_key: str) -> bool:
         raise
     except Exception as e:
         raise R2StorageError(f"Failed to delete video from R2: {e}") from e
+
+
+def head_video(object_key: str) -> dict[str, Any]:
+    """Get object metadata from R2."""
+    try:
+        client = get_r2_client()
+        return client.head_object(Bucket=R2_BUCKET_NAME, Key=object_key)
+    except R2StorageError:
+        raise
+    except Exception as e:
+        raise R2StorageError(f"Failed to head object '{object_key}': {e}") from e
+
+
+def download_video_to_temp(object_key: str, suffix: str = ".mp4") -> Path:
+    """Download an R2 object to a local temporary file."""
+    try:
+        client = get_r2_client()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp_path = Path(tmp.name)
+        client.download_file(R2_BUCKET_NAME, object_key, str(tmp_path))
+        return tmp_path
+    except R2StorageError:
+        raise
+    except Exception as e:
+        raise R2StorageError(f"Failed to download object '{object_key}': {e}") from e
 
 
 def _build_public_url(object_key: str) -> str:

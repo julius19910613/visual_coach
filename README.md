@@ -51,9 +51,9 @@ uv run main.py path/to/player_video.mp4 --pretty
 
 视频偏进攻时，防守维度若无足够画面会标记为 `observability: "none"`、`score: null`。
 
-## Web API
+## Web API (Async, Vercel-friendly)
 
-项目提供 FastAPI Web API，支持通过 HTTP 上传视频文件进行分析。
+项目提供 FastAPI Web API，默认采用异步任务模式，适配 Vercel 部署（API 只负责任务提交与状态查询）。
 
 ### 启动 API 服务器
 
@@ -77,51 +77,39 @@ uv run run_api.py --reload
 
 #### POST /api/analyze
 
-上传并分析球员视频文件。
+创建异步分析任务。
 
 **请求格式**：`multipart/form-data`
 
-**参数**：
-- `file`：视频文件（与 `video_url` 二选一）
-- `video_url`：视频 URL（Google Drive、Dropbox 或直链，与 `file` 二选一）
-- `store_video`：是否将视频存储到 Cloudflare R2（默认 `true`；R2 未配置时忽略）
-
-**支持的视频格式**：.mp4, .mpeg, .mpg, .mov, .avi, .flv, .webm, .wmv, .3gpp
-
-**文件大小限制**：最大 2 GB
+**参数（三选一）**：
+- `r2_object_key`：R2 对象 key（推荐，生产使用）
+- `file`：保留兼容字段（异步模式下默认不处理）
+- `video_url`：保留兼容字段（异步模式下默认不处理）
 
 **响应**：
-- `200`：成功，返回 `PlayerAnalysisReport` JSON
-- `400`：无效文件格式
-- `413`：文件过大
-- `500`：分析错误
+- `202`：任务已创建，返回 `{ "job_id": "...", "status": "pending" }`
+- `400`：参数错误
+- `500`：任务创建/入队失败
+
+#### GET /api/analyze/{job_id}
+
+查询异步任务状态：
+
+- `pending | processing`：任务进行中
+- `completed`：结果在 `result` 字段（`PlayerAnalysisReport`）
+- `failed`：错误信息在 `error` 字段
 
 **示例**：
 
 ```bash
-# 使用 curl 测试
+# 1) 提交任务（推荐传 R2 key）
 curl -X POST "http://localhost:8000/api/analyze" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
-  -F "file=@path/to/player_video.mp4"
-```
+  -F "r2_object_key=videos/白队/highlight_高神.mov"
 
-**Python 示例**：
-
-```python
-import requests
-
-url = "http://localhost:8000/api/analyze"
-files = {"file": open("player_video.mp4", "rb")}
-response = requests.post(url, files=files)
-
-if response.status_code == 200:
-    report = response.json()
-    print(f"Player summary: {report['player_summary']}")
-    print(f"Offense score: {report['dimensions']['offense']['score']}")
-    print(f"Defense score: {report['dimensions']['defense']['score']}")
-else:
-    print(f"Error: {response.json()}")
+# 2) 查询任务状态
+curl "http://localhost:8000/api/analyze/<job_id>"
 ```
 
 ### 测试 API
@@ -130,9 +118,24 @@ else:
 # 运行基本测试（健康检查、根端点）
 uv run test_api.py
 
-# 测试视频上传
-uv run test_api.py path/to/test_video.mp4
+# Worker 服务（Cloud Run/本地）启动示例
+uv run run_worker.py --port 8100
 ```
+
+### Async 环境变量（部署重点）
+
+在 `.env` 中配置：
+
+```bash
+ASYNC_MODE=true
+WORKER_ENDPOINT=https://your-worker-host
+WORKER_SHARED_SECRET=your_shared_secret
+JOB_STORE_PATH=data/jobs.db
+GEMINI_URL_MODEL=gemini-3-flash-preview
+GEMINI_URL_MAX_BYTES=104857600
+```
+
+- `WORKER_ENDPOINT` 为空时，会退化为本地 inline 处理（仅适合开发，不建议 Vercel 生产使用）。
 
 ## MCP（Cursor）
 
@@ -164,6 +167,24 @@ R2_ACCESS_KEY_ID=你的Access Key ID
 R2_SECRET_ACCESS_KEY=你的Secret Access Key
 R2_BUCKET_NAME=visual-coach-videos
 R2_PUBLIC_URL=                # 可选：自定义域名，如 https://videos.yourdomain.com
+R2_KEY_PREFIX=videos          # 可选：R2 对象前缀，默认 videos
 ```
 
 `R2_PUBLIC_URL` 为空时，API 返回的 `video_url` 为预签名 URL（默认 1 小时有效）；设置自定义域名后返回永久公开链接（需在 R2 存储桶设置中启用公开访问）。
+
+### 白队 / 黑队 视频批量上传到 R2
+
+如果你希望把本地 `白队`、`黑队` 目录下的所有视频同步到 R2，可以使用脚本：
+
+```bash
+uv run python scripts/upload_teams_to_r2.py          # 实际上传
+uv run python scripts/upload_teams_to_r2.py --dry-run  # 仅查看将上传的对象 key
+```
+
+行为说明：
+- 仅扫描项目根目录下的 `白队`、`黑队` 文件夹。
+- 支持扩展名：.mp4/.mov/.avi/.webm/.mkv/.mpeg/.mpg/.flv/.wmv/.3gpp。
+- R2 对象 key 形如：`videos/白队/xxx.mov`、`videos/黑队/yyy.mp4`（可通过 `R2_KEY_PREFIX` 调整 `videos`）。
+- 同名 key 会被新文件**覆盖**（R2/S3 语义）。
+
+> 注意：旧的上传脚本 `upload_to_r2.py`、`upload_wrangler.py` 与 `upload_wrangler.sh` 仅保留作历史参考，不再推荐使用（范围过大且包含硬编码配置）。\n> 建议在确认新脚本工作正常后，在 Cloudflare Dashboard 中**轮换 R2 API 密钥**，避免旧凭证泄露风险。

@@ -6,7 +6,7 @@ from pathlib import Path
 from google import genai
 from google.genai import types
 
-from config.settings import GEMINI_API_KEY, GEMINI_MODEL
+from config.settings import GEMINI_API_KEY, GEMINI_MODEL, GEMINI_URL_MODEL
 from src.prompts import SYSTEM_INSTRUCTION, USER_PROMPT
 from src.schemas import PlayerAnalysisReport
 from src.video_loader import VideoInfo
@@ -16,6 +16,31 @@ class GeminiAnalyzerError(Exception):
     """Raised when Gemini API call fails."""
 
     pass
+
+
+def _generate_report(client: genai.Client, model: str, video_part) -> PlayerAnalysisReport:
+    contents: list = [video_part, USER_PROMPT]
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_INSTRUCTION,
+        response_mime_type="application/json",
+        response_json_schema=PlayerAnalysisReport.model_json_schema(),
+    )
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config,
+    )
+    if not response.text:
+        raise GeminiAnalyzerError(
+            "Empty response from Gemini. "
+            "The model may have blocked the content or returned no text."
+        )
+    try:
+        return PlayerAnalysisReport.model_validate_json(response.text)
+    except Exception as e:
+        raise GeminiAnalyzerError(
+            f"Failed to parse model response as JSON: {e}\nResponse: {response.text}"
+        ) from e
 
 
 def analyze_video(video_info: VideoInfo) -> PlayerAnalysisReport:
@@ -63,29 +88,14 @@ def analyze_video(video_info: VideoInfo) -> PlayerAnalysisReport:
             uploaded = client.files.upload(file=str(upload_path))
         video_part = uploaded
 
-    contents: list = [video_part, USER_PROMPT]
+    return _generate_report(client, GEMINI_MODEL, video_part)
 
-    config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_INSTRUCTION,
-        response_mime_type="application/json",
-        response_json_schema=PlayerAnalysisReport.model_json_schema(),
-    )
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=contents,
-        config=config,
-    )
+def analyze_video_from_url(video_url: str, mime_type: str = "video/mp4") -> PlayerAnalysisReport:
+    """Analyze a video from public/signed URL using URL-compatible model."""
+    if not GEMINI_API_KEY:
+        raise GeminiAnalyzerError("GEMINI_API_KEY not set. Add it to .env or environment.")
 
-    if not response.text:
-        raise GeminiAnalyzerError(
-            "Empty response from Gemini. "
-            "The model may have blocked the content or returned no text."
-        )
-
-    try:
-        return PlayerAnalysisReport.model_validate_json(response.text)
-    except Exception as e:
-        raise GeminiAnalyzerError(
-            f"Failed to parse model response as JSON: {e}\nResponse: {response.text}"
-        ) from e
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    video_part = types.Part.from_uri(file_uri=video_url, mime_type=mime_type)
+    return _generate_report(client, GEMINI_URL_MODEL, video_part)
