@@ -102,6 +102,19 @@ async def health():
     return HealthResponse(status="ok", version="2.0.0")
 
 
+@app.get("/debug/env")
+async def debug_env():
+    """Debug: check key environment variables (no secrets)."""
+    import os as _os
+    return {
+        "ASYNC_MODE": _os.getenv("ASYNC_MODE", "(not set)"),
+        "R2_ACCOUNT_ID": bool(_os.getenv("R2_ACCOUNT_ID")),
+        "R2_BUCKET_NAME": _os.getenv("R2_BUCKET_NAME", "(not set)"),
+        "GEMINI_API_KEY": bool(_os.getenv("GEMINI_API_KEY")),
+        "VERCEL": _os.getenv("VERCEL", "(not set)"),
+    }
+
+
 @app.post(
     "/api/analyze",
     response_model=JobCreateResponse,
@@ -156,6 +169,12 @@ async def analyze_video(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="In async mode, please provide 'r2_object_key'.",
         )
+
+    # Fix Latin-1 → UTF-8 mojibake from form data encoding on some runtimes (Vercel)
+    try:
+        r2_object_key = r2_object_key.encode("latin-1").decode("utf-8")
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        pass  # already valid UTF-8
 
     job = create_job(source_type="r2_object_key", r2_object_key=r2_object_key)
     try:

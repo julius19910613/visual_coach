@@ -1,13 +1,11 @@
-#!/usr/bin/env python3
-"""API entry point for Vercel deployment."""
+"""Vercel serverless entry point — delegates to the full FastAPI app."""
 
 import sys
 from pathlib import Path
 
-# Add project root for imports (api/ is at root level)
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# Ensure project root is on sys.path so `config`, `src`, `app` are importable.
+_project_root = str(Path(__file__).resolve().parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 
-from app.api.main import app
-
-# For Vercel serverless functions
-handler = app
+from app.api.main import app  # noqa: E402

@@ -23,8 +23,10 @@ R2_PUBLIC_URL: str = os.getenv("R2_PUBLIC_URL", "")
 R2_ENABLED: bool = bool(R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY)
 
 # Async analysis (Vercel API + worker)
-ASYNC_MODE: bool = os.getenv("ASYNC_MODE", "true").lower() == "true"
-JOB_STORE_PATH: str = os.getenv("JOB_STORE_PATH", "data/jobs.db")
+ASYNC_MODE: bool = os.getenv("ASYNC_MODE", "true").strip().lower() == "true"
+# Vercel serverless: filesystem is read-only except /tmp
+_default_job_store = "/tmp/jobs.db" if os.getenv("VERCEL") else "data/jobs.db"
+JOB_STORE_PATH: str = os.getenv("JOB_STORE_PATH", _default_job_store)
 WORKER_ENDPOINT: str = os.getenv("WORKER_ENDPOINT", "")
 WORKER_SHARED_SECRET: str = os.getenv("WORKER_SHARED_SECRET", "")
 
@@ -36,7 +38,7 @@ FILE_API_MAX_BYTES: int = 2 * 1024 * 1024 * 1024  # 2 GB (free tier)
 SUPPORTED_VIDEO_MIME_TYPES: frozenset[str] = frozenset({
     "video/mp4",
     "video/mpeg",
-    "video/mov",
+    "video/quicktime",
     "video/avi",
     "video/x-flv",
     "video/mpg",
@@ -50,7 +52,7 @@ VIDEO_EXTENSION_MIME: dict[str, str] = {
     ".mp4": "video/mp4",
     ".mpeg": "video/mpeg",
     ".mpg": "video/mpeg",
-    ".mov": "video/mov",
+    ".mov": "video/quicktime",
     ".avi": "video/avi",
     ".flv": "video/x-flv",
     ".webm": "video/webm",

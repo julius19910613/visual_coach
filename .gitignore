@@ -71,3 +71,10 @@ wheels/
 .installed.cfg
 *.egg
 .vercel
+
+# Cloudflare Workers
+.wrangler/
+cf-workers/node_modules/
+cf-workers/dist/
+.wrangler/
+node_modules/

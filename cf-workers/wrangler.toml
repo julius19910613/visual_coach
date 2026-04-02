@@ -1,0 +1,11 @@
+name = "visual-coach"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[r2_buckets]]
+binding = "VISUAL_COACH"
+bucket_name = "visualcoach"
+
+[[kv_namespaces]]
+binding = "JOB_STORE"
+id = "3ee534c807204a058d99c5f819991880"
