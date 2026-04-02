@@ -34,7 +34,7 @@ export const RESPONSE_SCHEMA = {
         offense: {
           type: "object",
           properties: {
-            score: { type: ["integer", "null"], description: "Score 1-5 if enough footage; null when observability is none" },
+            score: { type: "integer", nullable: true, description: "Score 1-5 if enough footage; null when observability is none" },
             observability: { type: "string", enum: ["full", "partial", "none"] },
             notes: { type: "string" },
             highlights: {
@@ -54,7 +54,7 @@ export const RESPONSE_SCHEMA = {
         defense: {
           type: "object",
           properties: {
-            score: { type: ["integer", "null"], description: "Score 1-5 if enough footage; null when observability is none" },
+            score: { type: "integer", nullable: true, description: "Score 1-5 if enough footage; null when observability is none" },
             observability: { type: "string", enum: ["full", "partial", "none"] },
             notes: { type: "string" },
             highlights: {
