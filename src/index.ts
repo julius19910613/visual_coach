@@ -11,12 +11,12 @@ app.use('*', cors());
 app.get('/', (c) =>
   c.json({
     name: 'Visual Coach API',
-    version: '3.0.0',
-    description: 'Player video analysis using Doubao API + Alibaba Cloud OSS',
+    version: '4.0.0',
+    description: 'Player video analysis using Doubao API + Volcengine TOS',
   }),
 );
 
-app.get('/health', (c) => c.json({ status: 'ok', version: '3.0.0' }));
+app.get('/health', (c) => c.json({ status: 'ok', version: '4.0.0' }));
 
 app.post('/api/analyze', async (c) => {
   const contentType = c.req.header('content-type') ?? '';
@@ -36,9 +36,8 @@ app.post('/api/analyze', async (c) => {
 
   try {
     const headResult = await getHeadObject(objectKey);
-    const fileSize = headResult.res?.headers?.['content-length']
-      ? parseInt(headResult.res.headers['content-length'])
-      : 0;
+    // TOS headObject returns TosResponse<HeadObjectOutput> where data has 'content-length' as string
+    const fileSize = parseInt((headResult as any).data?.['content-length'] || '0') || 0;
 
     let videoData: Buffer | null = null;
     let videoUrl = '';

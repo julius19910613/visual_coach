@@ -1,16 +1,17 @@
 {
   "name": "visual-coach",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node --import tsx src/server.ts",
     "build": "tsc",
+    "build:edgeone": "tsc --noEmit",
     "start": "node dist/server.js"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
-    "ali-oss": "^6.21.0",
+    "@volcengine/tos-sdk": "^2.9.1",
     "dotenv": "^16.4.7",
     "hono": "^4.12.10"
   },
