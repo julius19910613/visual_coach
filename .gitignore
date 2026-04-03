@@ -8,3 +8,9 @@ dist/
 __pycache__/
 .venv/
 .DS_Store
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*
+  
