@@ -1,0 +1,5 @@
+{
+  "cloud-functions": {
+    "envFile": ".env"
+  }
+}

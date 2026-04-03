@@ -1,24 +1,22 @@
 {
   "name": "visual-coach",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --import tsx src/server.ts",
-    "build": "tsc",
-    "build:edgeone": "tsc --noEmit",
-    "start": "node dist/server.js"
+    "dev": "edgeone pages dev",
+    "build": "tsc --noEmit",
+    "deploy": "edgeone pages deploy",
+    "deploy:preview": "edgeone pages deploy -e preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hono/node-server": "^1.14.0",
     "@volcengine/tos-sdk": "^2.9.1",
-    "dotenv": "^16.4.7",
-    "hono": "^4.12.10",
-    "hono-edgeone-pages-adapter": "^0.0.3"
+    "hono": "^4.12.10"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
-    "tsx": "^4.19.0",
+    "edgeone": "latest",
     "typescript": "^6.0.2"
   }
 }

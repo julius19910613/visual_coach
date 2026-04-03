@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getVideoBuffer, getVideoPresignedUrl, getHeadObject, inferMimeType } from './oss';
-import { analyzeVideo } from './doubao';
+import { getVideoBuffer, getVideoPresignedUrl, getHeadObject, inferMimeType } from '../../src/oss';
+import { analyzeVideo } from '../../src/doubao';
 
 const BASE64_MAX_BYTES = 80 * 1024 * 1024; // 80MB
 
@@ -11,14 +11,14 @@ app.use('*', cors());
 app.get('/', (c) =>
   c.json({
     name: 'Visual Coach API',
-    version: '4.0.0',
-    description: 'Player video analysis using Doubao API + Volcengine TOS',
+    version: '5.0.0',
+    description: 'Player video analysis using Doubao API + Volcengine TOS (EdgeOne Pages)',
   }),
 );
 
-app.get('/health', (c) => c.json({ status: 'ok', version: '4.0.0' }));
+app.get('/health', (c) => c.json({ status: 'ok', version: '5.0.0' }));
 
-app.post('/api/analyze', async (c) => {
+app.post('/analyze', async (c) => {
   const contentType = c.req.header('content-type') ?? '';
   let objectKey: string | undefined;
 
@@ -36,7 +36,6 @@ app.post('/api/analyze', async (c) => {
 
   try {
     const headResult = await getHeadObject(objectKey);
-    // TOS headObject returns TosResponse<HeadObjectOutput> where data has 'content-length' as string
     const fileSize = parseInt((headResult as any).data?.['content-length'] || '0') || 0;
 
     let videoData: Buffer | null = null;
